@@ -1,0 +1,106 @@
+Different Parts or Aspects of Cyber Security
+===========================================
+
+1) Network Security
+Brief:
+Network security protects the pathways through which devices communicate, such as office Wi-Fi, internet routers, company switches, and private business networks. In simple words, it works like traffic police and gatekeepers for digital data, deciding which connection is trusted and which should be blocked. It is used anywhere multiple devices share information, including schools, hospitals, banks, factories, offices, and cloud-connected branches. Common protections include firewalls, VPNs, network segmentation, and monitoring tools. Together, these controls help prevent unauthorized access, reduce service outages, and keep daily digital operations safe and stable.
+
+Example questions:
+- What is the difference between a firewall and an IDS/IPS?
+- How does network segmentation reduce security risk?
+- What are common signs of a DDoS attack?
+
+Example system prompt:
+"You are a network security assistant. Explain concepts clearly, suggest practical defensive controls, and include step-by-step checks for firewalls, IDS/IPS, segmentation, and traffic monitoring."
+
+
+2) Application Security
+Brief:
+Application security is the process of making software safe at every stage, from planning and coding to testing and live use. If an app is a building, application security checks every door, lock, and entry point so only the right users can get in and use features safely. It is used in websites, mobile apps, APIs, online banking systems, shopping platforms, hospital portals, and internal company tools. Typical practices include secure coding, regular vulnerability testing, patching, and runtime protection. This helps protect user data, payments, and business operations from misuse, fraud, and cyber attacks.
+
+Example questions:
+- What are the OWASP Top 10 risks?
+- How can I prevent SQL injection in a web app?
+- What is secure code review and why is it important?
+
+Example system prompt:
+"You are an application security expert. Help identify software vulnerabilities, map issues to OWASP risks, and provide secure coding fixes with safe examples."
+
+
+3) Endpoint Security
+Brief:
+Endpoint security protects every individual device connected to an organization, such as laptops, desktops, servers, tablets, and phones. In simple terms, each device is a possible entry door for attackers, and endpoint security adds locks, alarms, and monitoring to that door. It is used in offices, remote work environments, schools, hospitals, and companies with bring-your-own-device policies. Common controls include antivirus, EDR tools, patch updates, encryption, and device restrictions. These protections help stop malware, ransomware, and credential theft early, and allow security teams to quickly isolate compromised machines before the threat spreads.
+
+Example questions:
+- What is EDR and how is it different from antivirus?
+- How do I harden Windows endpoints?
+- What should I check after a malware alert?
+
+Example system prompt:
+"You are an endpoint security analyst. Provide practical hardening checklists, incident triage steps, and detection guidance for malware and suspicious endpoint behavior."
+
+
+4) Cloud Security
+Brief:
+Cloud security protects applications, databases, files, and services that run on cloud platforms rather than only on local computers. You can think of cloud services as rented digital spaces, and cloud security makes sure those spaces have correct locks, access rules, and monitoring. It is used by startups, enterprises, schools, hospitals, and government teams for hosting websites, storing files, running backups, and powering modern apps. Main controls include identity permissions, encryption, secure configurations, network filtering, and activity logging. Good cloud security prevents accidental data exposure, unauthorized access, and downtime while supporting safe business growth.
+
+Example questions:
+- What are common cloud misconfigurations?
+- How do IAM roles improve security?
+- How do I secure public storage buckets?
+
+Example system prompt:
+"You are a cloud security assistant. Recommend least-privilege IAM, secure configuration baselines, and monitoring controls for cloud services and workloads."
+
+
+5) Identity and Access Management (IAM)
+Brief:
+Identity and Access Management (IAM) controls digital identity and access in a simple way: verify who a user is, decide what they can use, and limit how long that access lasts. It works like ID cards and permission badges in a secure office building, but for software and data. IAM is used in email systems, HR tools, cloud dashboards, developer platforms, and customer portals. It includes passwords, MFA, single sign-on, and role-based access rules. Strong IAM prevents unauthorized access to sensitive information and makes it easier to safely add, change, or remove permissions as people change roles.
+
+Example questions:
+- Why is MFA important for security?
+- What is the principle of least privilege?
+- How do role-based access controls work?
+
+Example system prompt:
+"You are an IAM specialist. Explain authentication and authorization clearly, recommend least-privilege access models, and provide secure identity governance practices."
+
+
+6) Incident Response and Digital Forensics
+Brief:
+Incident response and digital forensics is the emergency and investigation process used after a cyber incident. Incident response focuses on fast action: detect the issue, contain it, remove the threat, recover systems, and communicate updates to stakeholders. Digital forensics focuses on evidence: collecting logs and device data to understand exactly what happened, when it happened, and how attackers entered. It is used in companies, banks, schools, hospitals, and government organizations during ransomware attacks, account breaches, or data leaks. This practice reduces damage, supports legal and compliance reporting, and helps teams improve defenses to prevent repeat incidents.
+
+Example questions:
+- What are the phases of incident response?
+- What evidence should be collected first?
+- How do I build a post-incident report?
+
+Example system prompt:
+"You are an incident response and forensics advisor. Provide structured response playbooks, evidence handling best practices, and concise root-cause analysis guidance."
+
+
+7) Governance, Risk, and Compliance (GRC)
+Brief:
+Governance, Risk, and Compliance (GRC) is the planning and policy side of cybersecurity that keeps security work aligned with business goals and legal requirements. Governance sets rules and responsibilities, risk management identifies what could cause harm and how serious it is, and compliance ensures required standards are met. It is used in all industries, especially finance, healthcare, e-commerce, and SaaS, where audits and regulations are common. GRC activities include writing policies, reviewing risks, tracking controls, and preparing audit evidence. Strong GRC helps organizations make smarter decisions, avoid penalties, and build trust with customers and regulators.
+
+Example questions:
+- What is the difference between a policy and a standard?
+- How do I perform a basic risk assessment?
+- How do frameworks like ISO 27001 or NIST CSF help?
+
+Example system prompt:
+"You are a cybersecurity GRC advisor. Help draft clear policies, assess and prioritize risk, and map controls to common compliance frameworks."
+
+
+8) Security Awareness and Human Factors
+Brief:
+Security awareness and human factors focuses on how people behave when using technology, because human mistakes are one of the most common causes of security incidents. This area teaches practical habits such as spotting phishing emails, using strong passwords, reporting suspicious links, and handling sensitive data carefully. It is used in every workplace where staff use email, messaging apps, shared documents, and mobile devices. Organizations run awareness sessions, phishing simulations, and simple reporting procedures so employees know what to do under pressure. Over time, this creates a security-first culture where everyone helps prevent attacks before they cause harm.
+
+Example questions:
+- How can employees detect phishing emails?
+- What should a security awareness program include?
+- How do I measure training effectiveness?
+
+Example system prompt:
+"You are a security awareness coach. Explain threats in simple language, create practical training content, and provide real-world social engineering prevention tips."
+
