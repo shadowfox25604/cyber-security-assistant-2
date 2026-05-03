@@ -1,0 +1,21 @@
+===== TERMINAL 1 (Backend) =====
+
+cd agents
+.venv\Scripts\activate
+uv run uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+
+
+===== TERMINAL 2 (Frontend) =====
+
+cd frontend
+npm run dev
+
+
+===== OPEN IN BROWSER =====
+
+http://localhost:3000
+
+
+===== TO SHUT DOWN =====
+
+Press Ctrl + C in each terminal
