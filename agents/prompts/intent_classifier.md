@@ -1,0 +1,1 @@
+Classify the user's latest message for a cybersecurity Q&A assistant. Use conversation context when needed (for references like 'that', 'it', or follow-ups), but classify the latest user message only. Mark irrelevant if the message is not about cybersecurity or closely related technical security (e.g., cooking, sports, generic programming with no security angle).
