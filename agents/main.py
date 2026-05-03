@@ -19,6 +19,10 @@ OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "response_templates"
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
+<<<<<<< HEAD
+=======
+SYSTEM_PROMPT_PATH = PROMPTS_DIR / "system_prompt.md"
+>>>>>>> 583b7b276a3c4fc89efbbdb67855478f62f1b6f9
 
 DOMAIN_TEMPLATE_FILES: dict[str, str] = {
     "network_security": "network_security.md",
@@ -32,15 +36,27 @@ def load_template(filename: str) -> str:
 
 
 def load_system_prompt() -> str:
+<<<<<<< HEAD
     return (PROMPTS_DIR / "system_prompt.md").read_text(encoding="utf-8").strip()
+=======
+    """Editable base instructions from `prompts/system_prompt.md`."""
+    return SYSTEM_PROMPT_PATH.read_text(encoding="utf-8").strip()
+>>>>>>> 583b7b276a3c4fc89efbbdb67855478f62f1b6f9
 
 
 SYSTEM_PROMPT = load_system_prompt()
 
 
+<<<<<<< HEAD
 def _system_content(body: str) -> str:
     base = SYSTEM_PROMPT
     return f"{base}\n\n{body}" if base else body
+=======
+def _with_system_prompt(content: str) -> str:
+    if not SYSTEM_PROMPT:
+        return content
+    return f"{SYSTEM_PROMPT}\n\n{content}"
+>>>>>>> 583b7b276a3c4fc89efbbdb67855478f62f1b6f9
 
 
 class IntentResult(BaseModel):
@@ -56,10 +72,10 @@ class QueryDomainResult(BaseModel):
         "application_security",
         "other_cybersecurity",
     ] = Field(
-        description="network_security: firewalls, IDS/IPS, segmentation, VPN, DNS security, TLS at perimeter, "
-        "cloud networking controls. application_security: OWASP, APIs, auth/sessions, secure coding, "
-        "app vulnerabilities, DevSecOps for apps. other_cybersecurity: anything else clearly in cybersecurity "
-        "but not primarily network-only or app-only."
+        description="network_security: network security (firewalls, IDS/IPS, segmentation, VPN, DNS security, "
+        "TLS at perimeter, cloud networking). application_security: application security (OWASP, APIs, "
+        "auth/sessions, secure coding, app vulnerabilities, DevSecOps for apps). other_cybersecurity: other "
+        "cybersecurity topics not primarily network-only or app-only."
     )
 
 
@@ -104,7 +120,6 @@ def _last_human_question(state: CyberState) -> str:
 
 
 def _conversation_context(state: CyberState) -> list[AnyMessage]:
-    """Return user/assistant conversation messages in chronological order."""
     messages = state.get("messages") or []
     return [m for m in messages if isinstance(m, (HumanMessage, AIMessage))]
 
@@ -119,8 +134,6 @@ def _make_llm(*, streaming: bool) -> ChatOpenAI:
     if OPENAI_BASE_URL:
         llm_kwargs["base_url"] = OPENAI_BASE_URL
     llm = ChatOpenAI(**llm_kwargs)
-    # Internal routing/QA models must not stream assistant text to AG-UI/CopilotKit
-    # (those runs still emit on_chat_model_end AIMessages with structured JSON).
     if not streaming:
         llm = llm.with_config(metadata={"copilotkit:emit-messages": False})
     return llm
@@ -136,7 +149,7 @@ def _message_text(content: object) -> str:
     return str(content)
 
 
-def intent_classifier_node(state: CyberState) -> dict:
+def intent_classifier(state: CyberState) -> dict:
     question = _last_human_question(state)
     context = _conversation_context(state)
     llm = _make_llm(streaming=False).with_structured_output(IntentResult, method="json_schema")
@@ -153,14 +166,16 @@ def intent_classifier_node(state: CyberState) -> dict:
     return {"intent": result.intent, "question": question}
 
 
-def query_classifier_node(state: CyberState) -> dict:
+def query_classifier(state: CyberState) -> dict:
     question = state.get("question") or _last_human_question(state)
     context = _conversation_context(state)
     llm = _make_llm(streaming=False).with_structured_output(QueryDomainResult, method="json_schema")
     sys = SystemMessage(
         content=_system_content(
             "Classify the latest cybersecurity question into exactly one domain for routing. "
-            "Use prior conversation only as context for follow-up references."
+            "Use prior conversation only as context for follow-up references. "
+            "Choose network_security for network security topics, application_security for application security, "
+            "and other_cybersecurity for other cybersecurity topics."
         )
     )
     result = llm.invoke([sys, *context])
@@ -168,12 +183,16 @@ def query_classifier_node(state: CyberState) -> dict:
     return {"query_domain": domain, "category": domain}
 
 
-def _qa_node(state: CyberState, specialist_instructions: str) -> dict:
+def _qa(state: CyberState, specialist_instructions: str) -> dict:
     question = state.get("question") or _last_human_question(state)
     context = _conversation_context(state)
     llm = _make_llm(streaming=False).with_structured_output(QAResult, method="json_schema")
     sys = SystemMessage(
+<<<<<<< HEAD
         content=_system_content(
+=======
+        content=_with_system_prompt(
+>>>>>>> 583b7b276a3c4fc89efbbdb67855478f62f1b6f9
             f"You are a specialist. {specialist_instructions}\n"
             "Use previous conversation context when the latest question is a follow-up. "
             "Set can_answer to false if you lack confidence, need proprietary or customer-specific data, "
@@ -186,24 +205,24 @@ def _qa_node(state: CyberState, specialist_instructions: str) -> dict:
     return {"qa_can_answer": result.can_answer, "qa_draft": result.draft_answer}
 
 
-def network_security_qa_node(state: CyberState) -> dict:
-    return _qa_node(
+def network_security_qa(state: CyberState) -> dict:
+    return _qa(
         state,
         "Focus on network security: segmentation, firewalls, IDS/IPS, VPN, DNS, TLS at the edge, "
         "cloud network controls, and related topics.",
     )
 
 
-def application_security_qa_node(state: CyberState) -> dict:
-    return _qa_node(
+def application_security_qa(state: CyberState) -> dict:
+    return _qa(
         state,
         "Focus on application security: OWASP-style risks, authentication and sessions, APIs, "
         "secure coding, dependency and CI/CD security for applications.",
     )
 
 
-def other_cybersecurity_qa_node(state: CyberState) -> dict:
-    return _qa_node(
+def other_cybersecurity_qa(state: CyberState) -> dict:
+    return _qa(
         state,
         "Focus on general cybersecurity: risk, governance, crypto concepts, IR overview, awareness, "
         "compliance themes, and cross-cutting topics not purely network-only or app-only.",
@@ -226,6 +245,8 @@ def format_response_node(state: CyberState) -> dict:
         template = load_template(filename)
     draft = (state.get("qa_draft") or "").strip()
     context = _conversation_context(state)
+    domain = state.get("query_domain") or "other_cybersecurity"
+    instructions = (state.get("prompt") or "").strip()
     llm = _make_llm(streaming=True)
     sys = SystemMessage(
         content=_system_content(
@@ -285,11 +306,13 @@ def cannot_answer_node(state: CyberState) -> dict:
     return {"messages": [response], "answer": text, "category": "cannot_answer"}
 
 
-def route_after_intent(state: CyberState) -> str:
+def route_after_intent(state: CyberState) -> Literal["irrelevant", "relevant"]:
     return "irrelevant" if state.get("intent") == "irrelevant" else "relevant"
 
 
-def route_after_query(state: CyberState) -> str:
+def route_after_query(
+    state: CyberState,
+) -> Literal["network_security", "application_security", "other_cybersecurity"]:
     d = state.get("query_domain")
     if d == "network_security":
         return "network_security"
@@ -298,7 +321,7 @@ def route_after_query(state: CyberState) -> str:
     return "other_cybersecurity"
 
 
-def route_after_qa(state: CyberState) -> str:
+def route_after_qa(state: CyberState) -> Literal["answered", "cannot_answer"]:
     return "answered" if state.get("qa_can_answer") else "cannot_answer"
 
 
@@ -316,15 +339,25 @@ def build_graph():
     graph_builder.add_node("irrelevant", irrelevant_node)
     graph_builder.add_node("cannot_answer", cannot_answer_node)
 
-    graph_builder.add_edge(START, "intent_classifier")
-    graph_builder.add_conditional_edges(
+    graph.add_node("intent_classifier", intent_classifier)
+    graph.add_node("query_classifier", query_classifier)
+    graph.add_node("network_security_qa", network_security_qa)
+    graph.add_node("application_security_qa", application_security_qa)
+    graph.add_node("other_cybersecurity_qa", other_cybersecurity_qa)
+    graph.add_node("format_generator_based_on_query", format_generator_based_on_query)
+    graph.add_node("format_response", format_response)
+    graph.add_node("irrelevant_reply", irrelevant_reply)
+    graph.add_node("cannot_answer_reply", cannot_answer_reply)
+
+    graph.add_edge(START, "intent_classifier")
+    graph.add_conditional_edges(
         "intent_classifier",
         route_after_intent,
         {"irrelevant": "irrelevant", "relevant": "query_classifier"},
     )
     graph_builder.add_edge("irrelevant", END)
 
-    graph_builder.add_conditional_edges(
+    graph.add_conditional_edges(
         "query_classifier",
         route_after_query,
         {
@@ -334,13 +367,13 @@ def build_graph():
         },
     )
 
-    for qa_node in (
+    for qa_name in (
         "network_security_qa",
         "application_security_qa",
         "other_cybersecurity_qa",
     ):
-        graph_builder.add_conditional_edges(
-            qa_node,
+        graph.add_conditional_edges(
+            qa_name,
             route_after_qa,
             {
                 "answered": "format_generator_based_on_query",
@@ -352,7 +385,7 @@ def build_graph():
     graph_builder.add_edge("format_response", END)
     graph_builder.add_edge("cannot_answer", END)
 
-    return graph_builder.compile(checkpointer=MemorySaver())
+    return graph.compile(checkpointer=MemorySaver())
 
 
 def _last_assistant_text(messages: list[AnyMessage]) -> str:
@@ -369,7 +402,6 @@ def main():
         {"messages": [HumanMessage(content="What is a firewall zone and when would I use one?")]},
         cfg,
     )
-    # Graph output_schema only exposes `messages`, not `answer`.
     msgs = out.get("messages") or []
     print(out.get("answer") or _last_assistant_text(msgs))
 
