@@ -1,9 +1,11 @@
 import os
+from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Literal, NotRequired
 
 from dotenv import load_dotenv
-from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, AnyMessage, HumanMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
@@ -17,19 +19,14 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 
-TEMPLATES_DIR = Path(__file__).resolve().parent / "response_templates"
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
 <<<<<<< HEAD
 =======
 SYSTEM_PROMPT_PATH = PROMPTS_DIR / "system_prompt.md"
 >>>>>>> 583b7b276a3c4fc89efbbdb67855478f62f1b6f9
 
-DOMAIN_TEMPLATE_FILES: dict[str, str] = {
-    "network_security": "network_security.md",
-    "application_security": "application_security.md",
-    "other_cybersecurity": "other_cybersecurity.md",
-}
 
+<<<<<<< HEAD
 
 def load_template(filename: str) -> str:
     return (TEMPLATES_DIR / filename).read_text(encoding="utf-8").strip()
@@ -37,6 +34,10 @@ def load_template(filename: str) -> str:
 
 def load_system_prompt() -> str:
 <<<<<<< HEAD
+=======
+@lru_cache(maxsize=1)
+def _base_system_text() -> str:
+>>>>>>> e0868ac (removed response templates)
     return (PROMPTS_DIR / "system_prompt.md").read_text(encoding="utf-8").strip()
 =======
     """Editable base instructions from `prompts/system_prompt.md`."""
@@ -44,12 +45,22 @@ def load_system_prompt() -> str:
 >>>>>>> 583b7b276a3c4fc89efbbdb67855478f62f1b6f9
 
 
-SYSTEM_PROMPT = load_system_prompt()
+def _prompt_body(filename: str, **replacements: str) -> str:
+    text = (PROMPTS_DIR / filename).read_text(encoding="utf-8")
+    for key, val in replacements.items():
+        text = text.replace(f"@@{key.upper()}@@", val)
+    return text.strip()
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 def _system_content(body: str) -> str:
     base = SYSTEM_PROMPT
+=======
+def _full_system(prompt_filename: str, **replacements: str) -> str:
+    base = _base_system_text()
+    body = _prompt_body(prompt_filename, **replacements)
+>>>>>>> e0868ac (removed response templates)
     return f"{base}\n\n{body}" if base else body
 =======
 def _with_system_prompt(content: str) -> str:
@@ -57,6 +68,29 @@ def _with_system_prompt(content: str) -> str:
         return content
     return f"{SYSTEM_PROMPT}\n\n{content}"
 >>>>>>> 583b7b276a3c4fc89efbbdb67855478f62f1b6f9
+
+
+DEFAULT_FORMAT_TEMPLATE = """## Overview
+Short definition and why it matters.
+
+## Key Points
+Main concepts, controls, and practical considerations.
+
+## How It Works
+Step-by-step explanation. If not relevant, write "Not applicable".
+
+## Examples / Use Cases
+Practical real-world examples.
+
+## Pros & Cons
+Advantages and limitations.
+
+## Security Importance
+How this topic improves security posture.
+
+## Quick Summary
+3-5 concise bullet takeaways.
+"""
 
 
 class IntentResult(BaseModel):
@@ -153,16 +187,11 @@ def intent_classifier(state: CyberState) -> dict:
     question = _last_human_question(state)
     context = _conversation_context(state)
     llm = _make_llm(streaming=False).with_structured_output(IntentResult, method="json_schema")
-    sys = SystemMessage(
-        content=_system_content(
-            "Classify the user's latest message for a cybersecurity Q&A assistant. "
-            "Use conversation context when needed (for references like 'that', 'it', or follow-ups), "
-            "but classify the latest user message only. "
-            "Mark irrelevant if the message is not about cybersecurity or closely related "
-            "technical security (e.g., cooking, sports, generic programming with no security angle)."
-        )
+    system = _full_system("intent_classifier.md")
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", "{system}"), MessagesPlaceholder("history")]
     )
-    result = llm.invoke([sys, *context])
+    result = (prompt | llm).invoke({"system": system, "history": context})
     return {"intent": result.intent, "question": question}
 
 
@@ -170,6 +199,7 @@ def query_classifier(state: CyberState) -> dict:
     question = state.get("question") or _last_human_question(state)
     context = _conversation_context(state)
     llm = _make_llm(streaming=False).with_structured_output(QueryDomainResult, method="json_schema")
+<<<<<<< HEAD
     sys = SystemMessage(
         content=_system_content(
             "Classify the latest cybersecurity question into exactly one domain for routing. "
@@ -177,12 +207,18 @@ def query_classifier(state: CyberState) -> dict:
             "Choose network_security for network security topics, application_security for application security, "
             "and other_cybersecurity for other cybersecurity topics."
         )
+=======
+    system = _full_system("query_classifier.md")
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", "{system}"), MessagesPlaceholder("history")]
+>>>>>>> e0868ac (removed response templates)
     )
-    result = llm.invoke([sys, *context])
+    result = (prompt | llm).invoke({"system": system, "history": context})
     domain = result.domain
     return {"query_domain": domain, "category": domain}
 
 
+<<<<<<< HEAD
 def _qa(state: CyberState, specialist_instructions: str) -> dict:
     question = state.get("question") or _last_human_question(state)
     context = _conversation_context(state)
@@ -200,12 +236,21 @@ def _qa(state: CyberState, specialist_instructions: str) -> dict:
             "If can_answer is true, draft_answer must be a complete but lightly formatted expert answer "
             "(headings optional); a formatter will apply the final response template."
         )
+=======
+def _qa_from_prompt(state: CyberState, prompt_filename: str) -> dict:
+    context = _conversation_context(state)
+    llm = _make_llm(streaming=False).with_structured_output(QAResult, method="json_schema")
+    system = _full_system(prompt_filename)
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", "{system}"), MessagesPlaceholder("history")]
+>>>>>>> e0868ac (removed response templates)
     )
-    result = llm.invoke([sys, *context])
+    result = (prompt | llm).invoke({"system": system, "history": context})
     return {"qa_can_answer": result.can_answer, "qa_draft": result.draft_answer}
 
 
 def network_security_qa(state: CyberState) -> dict:
+<<<<<<< HEAD
     return _qa(
         state,
         "Focus on network security: segmentation, firewalls, IDS/IPS, VPN, DNS, TLS at the edge, "
@@ -227,13 +272,33 @@ def other_cybersecurity_qa(state: CyberState) -> dict:
         "Focus on general cybersecurity: risk, governance, crypto concepts, IR overview, awareness, "
         "compliance themes, and cross-cutting topics not purely network-only or app-only.",
     )
+=======
+    return _qa_from_prompt(state, "network_security_qa.md")
+
+
+def application_security_qa(state: CyberState) -> dict:
+    return _qa_from_prompt(state, "application_security_qa.md")
+
+
+def other_cybersecurity_qa(state: CyberState) -> dict:
+    return _qa_from_prompt(state, "other_cybersecurity_qa.md")
+>>>>>>> e0868ac (removed response templates)
 
 
 def format_generator_based_on_query_node(state: CyberState) -> dict:
-    """Load the domain response template for the successful QA path (Format generator based on query)."""
-    domain = state.get("query_domain") or "other_cybersecurity"
-    filename = DOMAIN_TEMPLATE_FILES.get(domain, "other_cybersecurity.md")
-    template = load_template(filename)
+    """Generate a response markdown template from the user question (prompt: format_generator_based_on_query.md)."""
+    question = state.get("question") or _last_human_question(state)
+    system = _full_system("format_generator_based_on_query.md", QUESTION=question)
+    llm = _make_llm(streaming=False)
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", "{system}"), MessagesPlaceholder("history")]
+    )
+    out = (prompt | llm).invoke(
+        {"system": system, "history": _conversation_context(state)}
+    )
+    template = _message_text(out.content).strip()
+    if not template:
+        template = DEFAULT_FORMAT_TEMPLATE
     return {"format_template": template}
 
 
@@ -241,66 +306,63 @@ def format_response_node(state: CyberState) -> dict:
     domain = state.get("query_domain") or "other_cybersecurity"
     template = (state.get("format_template") or "").strip()
     if not template:
-        filename = DOMAIN_TEMPLATE_FILES.get(domain, "other_cybersecurity.md")
-        template = load_template(filename)
+        template = DEFAULT_FORMAT_TEMPLATE
     draft = (state.get("qa_draft") or "").strip()
     context = _conversation_context(state)
     domain = state.get("query_domain") or "other_cybersecurity"
     instructions = (state.get("prompt") or "").strip()
     llm = _make_llm(streaming=True)
-    sys = SystemMessage(
-        content=_system_content(
-            "Rewrite the draft into the user's final answer. Obey the response template exactly "
-            "(same headings, same order, no skipped sections). "
-            "If the latest question depends on prior turns, incorporate that context accurately. "
-            "Do not append extra closing remarks, call-to-action lines, or offers to continue "
-            '(for example: "If you want, I can..."). End immediately after the final template section.\n\n'
-            f"--- TEMPLATE ---\n{template}\n--- END TEMPLATE ---"
-        )
+    system = _full_system("format_response.md", TEMPLATE=template)
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", "{system}"),
+            MessagesPlaceholder("history"),
+            ("human", "Expert draft to align with the template:\n{draft}"),
+        ]
     )
-    user = HumanMessage(content=f"Expert draft to align with the template:\n{draft}")
-    response = llm.invoke([sys, *context, user])
+    response = (prompt | llm).invoke({"system": system, "history": context, "draft": draft})
     text = _message_text(response.content)
     return {"messages": [response], "answer": text, "category": domain}
 
 
 def irrelevant_node(state: CyberState) -> dict:
     """Terminal path when intent is irrelevant (no query QA or format steps)."""
-    template = load_template("irrelevant.md")
     question = state.get("question") or _last_human_question(state)
     context = _conversation_context(state)
     llm = _make_llm(streaming=True)
-    sys = SystemMessage(
-        content=_system_content(
-            "Follow the response format instructions exactly.\n\n"
-            f"--- FORMAT ---\n{template}\n--- END FORMAT ---"
-        )
+    system = _full_system("irrelevant.md")
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", "{system}"),
+            MessagesPlaceholder("history"),
+            ("human", "Latest user message:\n{question}"),
+        ]
     )
-    response = llm.invoke([sys, *context, HumanMessage(content=f"Latest user message:\n{question}")])
+    response = (prompt | llm).invoke(
+        {"system": system, "history": context, "question": question}
+    )
     text = _message_text(response.content)
     return {"messages": [response], "answer": text, "category": "irrelevant"}
 
 
 def cannot_answer_node(state: CyberState) -> dict:
     """Terminal path when the domain QA module cannot answer with confidence."""
-    template = load_template("cannot_answer.md")
     question = state.get("question") or _last_human_question(state)
     context = _conversation_context(state)
     llm = _make_llm(streaming=True)
-    sys = SystemMessage(
-        content=_system_content(
-            "Follow the response format instructions exactly.\n\n"
-            f"--- FORMAT ---\n{template}\n--- END FORMAT ---"
-        )
-    )
-    response = llm.invoke(
+    system = _full_system("cannot_answer.md")
+    prompt = ChatPromptTemplate.from_messages(
         [
-            sys,
-            *context,
-            HumanMessage(
-                content=f"Latest user question:\n{question}\n\nSpecialist could not answer confidently."
+            ("system", "{system}"),
+            MessagesPlaceholder("history"),
+            (
+                "human",
+                "Latest user question:\n{question}\n\nSpecialist could not answer confidently.",
             ),
         ]
+    )
+    response = (prompt | llm).invoke(
+        {"system": system, "history": context, "question": question}
     )
     text = _message_text(response.content)
     return {"messages": [response], "answer": text, "category": "cannot_answer"}
@@ -329,11 +391,11 @@ def build_graph():
     """Flow: START → Intent Classifier → (irrelevant → END | relevant → Query Classifier → QA → …)."""
     graph_builder = StateGraph(CyberState, output_schema=CyberPublicOutput)
 
-    graph_builder.add_node("intent_classifier", intent_classifier_node)
-    graph_builder.add_node("query_classifier", query_classifier_node)
-    graph_builder.add_node("network_security_qa", network_security_qa_node)
-    graph_builder.add_node("application_security_qa", application_security_qa_node)
-    graph_builder.add_node("other_cybersecurity_qa", other_cybersecurity_qa_node)
+    graph_builder.add_node("intent_classifier", intent_classifier)
+    graph_builder.add_node("query_classifier", query_classifier)
+    graph_builder.add_node("network_security_qa", network_security_qa)
+    graph_builder.add_node("application_security_qa", application_security_qa)
+    graph_builder.add_node("other_cybersecurity_qa", other_cybersecurity_qa)
     graph_builder.add_node("format_generator_based_on_query", format_generator_based_on_query_node)
     graph_builder.add_node("format_response", format_response_node)
     graph_builder.add_node("irrelevant", irrelevant_node)
@@ -372,7 +434,11 @@ def build_graph():
         "application_security_qa",
         "other_cybersecurity_qa",
     ):
+<<<<<<< HEAD
         graph.add_conditional_edges(
+=======
+        graph_builder.add_conditional_edges(
+>>>>>>> e0868ac (removed response templates)
             qa_name,
             route_after_qa,
             {
