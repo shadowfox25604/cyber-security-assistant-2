@@ -20,29 +20,13 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
-<<<<<<< HEAD
-=======
 SYSTEM_PROMPT_PATH = PROMPTS_DIR / "system_prompt.md"
->>>>>>> 583b7b276a3c4fc89efbbdb67855478f62f1b6f9
 
 
-<<<<<<< HEAD
-
-def load_template(filename: str) -> str:
-    return (TEMPLATES_DIR / filename).read_text(encoding="utf-8").strip()
-
-
-def load_system_prompt() -> str:
-<<<<<<< HEAD
-=======
 @lru_cache(maxsize=1)
 def _base_system_text() -> str:
->>>>>>> e0868ac (removed response templates)
-    return (PROMPTS_DIR / "system_prompt.md").read_text(encoding="utf-8").strip()
-=======
     """Editable base instructions from `prompts/system_prompt.md`."""
     return SYSTEM_PROMPT_PATH.read_text(encoding="utf-8").strip()
->>>>>>> 583b7b276a3c4fc89efbbdb67855478f62f1b6f9
 
 
 def _prompt_body(filename: str, **replacements: str) -> str:
@@ -52,45 +36,10 @@ def _prompt_body(filename: str, **replacements: str) -> str:
     return text.strip()
 
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-def _system_content(body: str) -> str:
-    base = SYSTEM_PROMPT
-=======
 def _full_system(prompt_filename: str, **replacements: str) -> str:
     base = _base_system_text()
     body = _prompt_body(prompt_filename, **replacements)
->>>>>>> e0868ac (removed response templates)
     return f"{base}\n\n{body}" if base else body
-=======
-def _with_system_prompt(content: str) -> str:
-    if not SYSTEM_PROMPT:
-        return content
-    return f"{SYSTEM_PROMPT}\n\n{content}"
->>>>>>> 583b7b276a3c4fc89efbbdb67855478f62f1b6f9
-
-
-DEFAULT_FORMAT_TEMPLATE = """## Overview
-Short definition and why it matters.
-
-## Key Points
-Main concepts, controls, and practical considerations.
-
-## How It Works
-Step-by-step explanation. If not relevant, write "Not applicable".
-
-## Examples / Use Cases
-Practical real-world examples.
-
-## Pros & Cons
-Advantages and limitations.
-
-## Security Importance
-How this topic improves security posture.
-
-## Quick Summary
-3-5 concise bullet takeaways.
-"""
 
 
 class IntentResult(BaseModel):
@@ -199,80 +148,27 @@ def query_classifier(state: CyberState) -> dict:
     question = state.get("question") or _last_human_question(state)
     context = _conversation_context(state)
     llm = _make_llm(streaming=False).with_structured_output(QueryDomainResult, method="json_schema")
-<<<<<<< HEAD
-    sys = SystemMessage(
-        content=_system_content(
-            "Classify the latest cybersecurity question into exactly one domain for routing. "
-            "Use prior conversation only as context for follow-up references. "
-            "Choose network_security for network security topics, application_security for application security, "
-            "and other_cybersecurity for other cybersecurity topics."
-        )
-=======
     system = _full_system("query_classifier.md")
     prompt = ChatPromptTemplate.from_messages(
         [("system", "{system}"), MessagesPlaceholder("history")]
->>>>>>> e0868ac (removed response templates)
     )
     result = (prompt | llm).invoke({"system": system, "history": context})
     domain = result.domain
     return {"query_domain": domain, "category": domain}
 
 
-<<<<<<< HEAD
-def _qa(state: CyberState, specialist_instructions: str) -> dict:
-    question = state.get("question") or _last_human_question(state)
-    context = _conversation_context(state)
-    llm = _make_llm(streaming=False).with_structured_output(QAResult, method="json_schema")
-    sys = SystemMessage(
-<<<<<<< HEAD
-        content=_system_content(
-=======
-        content=_with_system_prompt(
->>>>>>> 583b7b276a3c4fc89efbbdb67855478f62f1b6f9
-            f"You are a specialist. {specialist_instructions}\n"
-            "Use previous conversation context when the latest question is a follow-up. "
-            "Set can_answer to false if you lack confidence, need proprietary or customer-specific data, "
-            "or the question is unsafe/ambiguous to answer without clarification. "
-            "If can_answer is true, draft_answer must be a complete but lightly formatted expert answer "
-            "(headings optional); a formatter will apply the final response template."
-        )
-=======
 def _qa_from_prompt(state: CyberState, prompt_filename: str) -> dict:
     context = _conversation_context(state)
     llm = _make_llm(streaming=False).with_structured_output(QAResult, method="json_schema")
     system = _full_system(prompt_filename)
     prompt = ChatPromptTemplate.from_messages(
         [("system", "{system}"), MessagesPlaceholder("history")]
->>>>>>> e0868ac (removed response templates)
     )
     result = (prompt | llm).invoke({"system": system, "history": context})
     return {"qa_can_answer": result.can_answer, "qa_draft": result.draft_answer}
 
 
 def network_security_qa(state: CyberState) -> dict:
-<<<<<<< HEAD
-    return _qa(
-        state,
-        "Focus on network security: segmentation, firewalls, IDS/IPS, VPN, DNS, TLS at the edge, "
-        "cloud network controls, and related topics.",
-    )
-
-
-def application_security_qa(state: CyberState) -> dict:
-    return _qa(
-        state,
-        "Focus on application security: OWASP-style risks, authentication and sessions, APIs, "
-        "secure coding, dependency and CI/CD security for applications.",
-    )
-
-
-def other_cybersecurity_qa(state: CyberState) -> dict:
-    return _qa(
-        state,
-        "Focus on general cybersecurity: risk, governance, crypto concepts, IR overview, awareness, "
-        "compliance themes, and cross-cutting topics not purely network-only or app-only.",
-    )
-=======
     return _qa_from_prompt(state, "network_security_qa.md")
 
 
@@ -282,7 +178,6 @@ def application_security_qa(state: CyberState) -> dict:
 
 def other_cybersecurity_qa(state: CyberState) -> dict:
     return _qa_from_prompt(state, "other_cybersecurity_qa.md")
->>>>>>> e0868ac (removed response templates)
 
 
 def format_generator_based_on_query_node(state: CyberState) -> dict:
@@ -297,20 +192,14 @@ def format_generator_based_on_query_node(state: CyberState) -> dict:
         {"system": system, "history": _conversation_context(state)}
     )
     template = _message_text(out.content).strip()
-    if not template:
-        template = DEFAULT_FORMAT_TEMPLATE
     return {"format_template": template}
 
 
 def format_response_node(state: CyberState) -> dict:
     domain = state.get("query_domain") or "other_cybersecurity"
     template = (state.get("format_template") or "").strip()
-    if not template:
-        template = DEFAULT_FORMAT_TEMPLATE
     draft = (state.get("qa_draft") or "").strip()
     context = _conversation_context(state)
-    domain = state.get("query_domain") or "other_cybersecurity"
-    instructions = (state.get("prompt") or "").strip()
     llm = _make_llm(streaming=True)
     system = _full_system("format_response.md", TEMPLATE=template)
     prompt = ChatPromptTemplate.from_messages(
@@ -401,25 +290,15 @@ def build_graph():
     graph_builder.add_node("irrelevant", irrelevant_node)
     graph_builder.add_node("cannot_answer", cannot_answer_node)
 
-    graph.add_node("intent_classifier", intent_classifier)
-    graph.add_node("query_classifier", query_classifier)
-    graph.add_node("network_security_qa", network_security_qa)
-    graph.add_node("application_security_qa", application_security_qa)
-    graph.add_node("other_cybersecurity_qa", other_cybersecurity_qa)
-    graph.add_node("format_generator_based_on_query", format_generator_based_on_query)
-    graph.add_node("format_response", format_response)
-    graph.add_node("irrelevant_reply", irrelevant_reply)
-    graph.add_node("cannot_answer_reply", cannot_answer_reply)
-
-    graph.add_edge(START, "intent_classifier")
-    graph.add_conditional_edges(
+    graph_builder.add_edge(START, "intent_classifier")
+    graph_builder.add_conditional_edges(
         "intent_classifier",
         route_after_intent,
         {"irrelevant": "irrelevant", "relevant": "query_classifier"},
     )
     graph_builder.add_edge("irrelevant", END)
 
-    graph.add_conditional_edges(
+    graph_builder.add_conditional_edges(
         "query_classifier",
         route_after_query,
         {
@@ -434,11 +313,7 @@ def build_graph():
         "application_security_qa",
         "other_cybersecurity_qa",
     ):
-<<<<<<< HEAD
-        graph.add_conditional_edges(
-=======
         graph_builder.add_conditional_edges(
->>>>>>> e0868ac (removed response templates)
             qa_name,
             route_after_qa,
             {
@@ -451,7 +326,7 @@ def build_graph():
     graph_builder.add_edge("format_response", END)
     graph_builder.add_edge("cannot_answer", END)
 
-    return graph.compile(checkpointer=MemorySaver())
+    return graph_builder.compile(checkpointer=MemorySaver())
 
 
 def _last_assistant_text(messages: list[AnyMessage]) -> str:
