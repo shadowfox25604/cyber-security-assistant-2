@@ -180,10 +180,10 @@ def other_cybersecurity_qa(state: CyberState) -> dict:
     return _qa_from_prompt(state, "other_cybersecurity_qa.md")
 
 
-def format_generator_based_on_query_node(state: CyberState) -> dict:
-    """Generate a response markdown template from the user question (prompt: format_generator_based_on_query.md)."""
+def format_generator_based_on_selected_state_node(state: CyberState) -> dict:
+    """Generate a response markdown template from the user question (prompt: format_generator_based_on_selected_state.md)."""
     question = state.get("question") or _last_human_question(state)
-    system = _full_system("format_generator_based_on_query.md", QUESTION=question)
+    system = _full_system("format_generator_based_on_selected_state.md", QUESTION=question)
     llm = _make_llm(streaming=False)
     prompt = ChatPromptTemplate.from_messages(
         [("system", "{system}"), MessagesPlaceholder("history")]
@@ -285,7 +285,7 @@ def build_graph():
     graph_builder.add_node("network_security_qa", network_security_qa)
     graph_builder.add_node("application_security_qa", application_security_qa)
     graph_builder.add_node("other_cybersecurity_qa", other_cybersecurity_qa)
-    graph_builder.add_node("format_generator_based_on_query", format_generator_based_on_query_node)
+    graph_builder.add_node("format_generator_based_on_selected_state", format_generator_based_on_selected_state_node)
     graph_builder.add_node("format_response", format_response_node)
     graph_builder.add_node("irrelevant", irrelevant_node)
     graph_builder.add_node("cannot_answer", cannot_answer_node)
@@ -317,12 +317,12 @@ def build_graph():
             qa_name,
             route_after_qa,
             {
-                "answered": "format_generator_based_on_query",
+                "answered": "format_generator_based_on_selected_state",
                 "cannot_answer": "cannot_answer",
             },
         )
 
-    graph_builder.add_edge("format_generator_based_on_query", "format_response")
+    graph_builder.add_edge("format_generator_based_on_selected_state", "format_response")
     graph_builder.add_edge("format_response", END)
     graph_builder.add_edge("cannot_answer", END)
 

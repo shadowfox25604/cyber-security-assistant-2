@@ -26,7 +26,7 @@ _INTERNAL_LLM_NODES = frozenset(
         "application_security_qa",
         "other_cybersecurity_qa",
         # Template is consumed only by format_response; must not appear as its own assistant message.
-        "format_generator_based_on_query",
+        "format_generator_based_on_selected_state",
     }
 )
 
